@@ -1,13 +1,11 @@
-// Використовуємо надійні CDN посилання, які не блокуються політикою CORS
-import { initializeApp } from "https://gstatic.com";
-import { getFirestore, doc, setDoc, getDoc } from "https://gstatic.com";
-
-
+// Використовуємо офіційні CDN-посилання Firebase (працюють без CORS-помилок)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // 2. Конфігурація твого проєкту Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDXWLekBLETz6Y7nMyi5iqFAlME-AnjJUc",
-  authDomain: "://firebaseapp.com",
+  authDomain: "todolist-c473c.firebaseapp.com",
   projectId: "todolist-c473c",
   storageBucket: "todolist-c473c.firebasestorage.app",
   messagingSenderId: "399560354449",
@@ -37,7 +35,7 @@ let tasks = [];
 async function syncData(tasksArray) {
   // Зберігаємо в браузері
   localStorage.setItem("tasksData", JSON.stringify(tasksArray));
-  
+
   // Оновлюємо лічильники на екрані
   updateCounters();
 
@@ -54,7 +52,7 @@ async function syncData(tasksArray) {
 function updateCounters() {
   const totalCount = tasks.length;
   const doneCount = tasks.filter(t => t.isDone).length;
-  
+
   total.textContent = totalCount;
   done.textContent = doneCount;
 }
@@ -71,11 +69,11 @@ function createChild(clas, text, parent, tagName = "div") {
 // 9. Головна функція, яка створює картку завдання на екрані
 function renderTask(item) {
   let task = document.createElement("div");
-  
-  // Визначаємо пріоритет (high, medium, low) і додаємо класи для CSS
+
+  // ИСПРАВЛЕНО: Обернули в шаблонную строку `` для правильной склейки классов
   let priorityClass = `priority-${item.priority}`;
   task.className = `task-item ${priorityClass}`;
-  
+
   // Прив'язуємо унікальний ID до картки
   task.dataset.id = item.id;
 
@@ -91,7 +89,8 @@ function renderTask(item) {
 
   // Створюємо блок кнопок дії
   let taskActions = document.createElement("div");
-  taskActions.classList = "task-actions";
+  // ИСПРАВЛЕНО: Вместо .classList = ... используем правильный .className
+  taskActions.className = "task-actions";
 
   let doneBtn = createChild("btn-done", "✓", taskActions, "button");
   let deleteBtn = createChild("btn-delete", "🗑", taskActions, "button");
@@ -102,11 +101,11 @@ function renderTask(item) {
   doneBtn.addEventListener("click", function () {
     if (!task.classList.contains("done")) {
       task.classList.add("done");
-      
+
       // Знаходимо це завдання в масиві та міняємо статус на true
       const targetTask = tasks.find(t => t.id === item.id);
       if (targetTask) targetTask.isDone = true;
-      
+
       syncData(tasks);
     }
   });
@@ -117,18 +116,13 @@ function renderTask(item) {
 
     // Видаляємо з масиву
     tasks = tasks.filter(t => t.id !== item.id);
-    
+
     syncData(tasks);
   });
 
   list.appendChild(task);
 }
 
-// =======================================================
-// 🔄 10. БЛОК АВТОМАТИЧНОГО ВІДНОВЛЕННЯ ДАНИХ ДЛЯ ДЗ
-// =======================================================
-
-// Спочатку миттєво завантажуємо дані з LocalStorage (якщо вони там є)
 let localData = JSON.parse(localStorage.getItem("tasksData")) || [];
 if (localData.length > 0) {
   tasks = [...localData];
@@ -141,18 +135,18 @@ async function checkCloudData() {
   try {
     const docRef = doc(db, "tasks", "allTasks");
     const docSnap = await getDoc(docRef);
-    
+
     if (docSnap.exists() && docSnap.data().items) {
       const cloudTasks = docSnap.data().items;
 
       // ЯКЩО КЕШ ОЧИЩЕНО (в браузері 0 тасок, а в хмарі Firebase дані є)
       if (tasks.length === 0 && cloudTasks.length > 0) {
         showRestoreBanner(cloudTasks);
-      } 
+      }
       // АБО якщо користувач просто зайшов з іншого пристрою чи дані оновилися
       else if (JSON.stringify(tasks) !== JSON.stringify(cloudTasks)) {
         tasks = cloudTasks;
-        list.innerHTML = ""; 
+        list.innerHTML = "";
         tasks.forEach(item => renderTask(item));
         updateCounters();
         localStorage.setItem("tasksData", JSON.stringify(tasks));
@@ -217,11 +211,11 @@ form.addEventListener("submit", function (event) {
 
   // Створюємо правильний об'єкт завдання з унікальним ID
   const newTask = {
-    id: String(Date.now()), 
+    id: String(Date.now()),
     task: text.value,
     date: date.value,
     time: time.value,
-    priority: select.value, 
+    priority: select.value,
     isDone: false
   };
 
